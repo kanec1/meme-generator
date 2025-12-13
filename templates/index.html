@@ -3,37 +3,13 @@
 <head>
     <title>AI Meme Generator</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 30px;
-            background-color: #f9f9f9;
-        }
-        h1 {
-            color: #333;
-        }
-        form {
-            margin-bottom: 20px;
-        }
-        input[type="file"] {
-            margin-bottom: 10px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        img {
-            margin-top: 20px;
-            max-width: 90%;
-            height: auto;
-            border: 2px solid #ccc;
-            border-radius: 10px;
-        }
-        .download-btn {
-            margin-top: 15px;
-            text-decoration: none;
-        }
+        body { font-family: Arial; text-align: center; padding: 30px; background: #f9f9f9; }
+        h1 { color: #333; }
+        form { margin-bottom: 20px; }
+        input[type="file"] { margin-bottom: 10px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        img { margin-top: 20px; max-width: 90%; border-radius: 10px; border: 2px solid #ccc; }
+        a.download-btn { display: inline-block; margin-top: 15px; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -45,13 +21,8 @@
     </form>
 
     {% if meme_url %}
-        <img src="{{ meme_url }}" alt="Generated Meme">
-        <br>
-        {% if download_url %}
-            <a href="{{ download_url }}" class="download-btn" download>
-                <button>Download Meme</button>
-            </a>
-        {% endif %}
+        <img src="{{ meme_url }}" alt="Generated Meme"><br>
+        <a href="{{ download_url }}" class="download-btn">Download Meme</a>
     {% endif %}
 </body>
 </html>
