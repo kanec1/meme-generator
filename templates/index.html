@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Meme Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 30px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        img {
+            margin-top: 20px;
+            max-width: 90%;
+            height: auto;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+        }
+        .download-btn {
+            margin-top: 15px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Meme Generator</h1>
+
+    <form action="/generate" method="POST" enctype="multipart/form-data">
+        <input type="file" name="image" required><br>
+        <button type="submit">Generate Meme</button>
+    </form>
+
+    {% if meme_url %}
+        <img src="{{ meme_url }}" alt="Generated Meme">
+        <br>
+        {% if download_url %}
+            <a href="{{ download_url }}" class="download-btn" download>
+                <button>Download Meme</button>
+            </a>
+        {% endif %}
+    {% endif %}
+</body>
+</html>
+
+
+
