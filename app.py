@@ -7,52 +7,44 @@ from openai import OpenAI
 
 app = Flask(__name__)
 
-# Initialize OpenAI client using API key from environment variable
+# Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Route for the form page
+# Route for the home page
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# Caption the image using BLIP
-def caption_image(image):
+# Generate meme (caption + text) in one call
+def generate_meme_text_from_image(image):
+    # Resize image to speed up processing
+    max_size = (1024, 1024)
+    image.thumbnail(max_size)
+
     buffer = BytesIO()
     image.save(buffer, format="PNG")
     image_b64 = base64.b64encode(buffer.getvalue()).decode()
 
+    prompt = (
+        "Look at this image and do the following:\n"
+        "1. Describe it in one clear sentence.\n"
+        "2. Write a funny meme caption in exactly two lines separated by |.\n"
+        "Return only the two caption lines."
+    )
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Describe this image in one clear sentence."},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{image_b64}"
-                        }
-                    }
-                ]
-            }
-        ],
-        max_tokens=100
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_b64}"}}
+            ]
+        }],
+        temperature=0.9,
+        max_tokens=150
     )
 
-    return response.choices[0].message.content.strip()
-
-# Generate meme text
-def generate_meme_text(caption):
-    prompt = (
-        f"Write a funny meme caption based on this image description:\n{caption}\n"
-        "Provide exactly two lines separated by |. DO NOT include any labels."
-    )
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.9
-    )
     text = response.choices[0].message.content.strip()
     if "|" in text:
         top_text, bottom_text = text.split("|", 1)
@@ -60,58 +52,39 @@ def generate_meme_text(caption):
         top_text, bottom_text = text, ""
     return top_text.strip(), bottom_text.strip()
 
-# Draw text on image
-def draw_text(draw, text, x, y=None, max_width=None, initial_font_size=50,
-              from_bottom=False, max_height_ratio=0.25, margin=10):
-    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+# Draw text on image (simplified)
+def draw_text(draw, text, x, y, max_width, from_bottom=False, font_path="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
+    font_size = 50
+    font = ImageFont.truetype(font_path, font_size)
     width, height = draw.im.size
-    max_width = max_width or width - 2 * margin
-    max_height = int(height * max_height_ratio)
+    max_width = max_width or width - 20
 
-    font_size = initial_font_size
-    while font_size > 10:
-        try:
-            font = ImageFont.truetype(font_path, font_size)
-        except:
-            font = ImageFont.load_default()
+    # Simple wrapping
+    words = text.split()
+    lines, line = [], ""
+    for word in words:
+        test_line = f"{line} {word}".strip()
+        bbox = draw.textbbox((0,0), test_line, font=font)
+        if bbox[2] - bbox[0] <= max_width:
+            line = test_line
+        else:
+            lines.append(line)
+            line = word
+    if line:
+        lines.append(line)
 
-        # Wrap text into lines
-        words = text.split()
-        lines = []
-        temp_words = words.copy()
-        while temp_words:
-            line_words = []
-            while temp_words:
-                line_words.append(temp_words.pop(0))
-                line_text = " ".join(line_words)
-                bbox = draw.textbbox((0, 0), line_text, font=font)
-                if bbox[2] - bbox[0] > max_width:
-                    if len(line_words) == 1:
-                        break
-                    temp_words.insert(0, line_words.pop())
-                    break
-            lines.append(" ".join(line_words))
+    total_height = len(lines) * font_size
+    y = height - total_height - 10 if from_bottom else 10
 
-        total_height = len(lines) * font_size
-        if total_height <= max_height:
-            break
-        font_size -= 2
-
-    # Determine y-position
-    if y is None:
-        y = height - total_height - margin if from_bottom else margin
-    elif from_bottom:
-        y = y - total_height - margin
-
-    # Draw lines with outline
+    # Draw outline + text
     for i, line in enumerate(lines):
         line_y = y + i * font_size
-        for dx in [-2, 0, 2]:
-            for dy in [-2, 0, 2]:
-                draw.text((x + dx, line_y + dy), line, font=font, anchor="mm", fill="black")
+        for dx in [-2,0,2]:
+            for dy in [-2,0,2]:
+                draw.text((x+dx, line_y+dy), line, font=font, anchor="mm", fill="black")
         draw.text((x, line_y), line, font=font, anchor="mm", fill="white")
 
-# Generate meme route
+# Meme generation route
 @app.route("/generate", methods=["POST"])
 def generate_meme():
     image_file = request.files["image"]
@@ -119,11 +92,10 @@ def generate_meme():
     draw = ImageDraw.Draw(image)
     width, height = image.size
 
-    caption = caption_image(image)
-    top_text, bottom_text = generate_meme_text(caption)
+    top_text, bottom_text = generate_meme_text_from_image(image)
 
-    draw_text(draw, top_text.upper(), x=width // 2, from_bottom=False)
-    draw_text(draw, bottom_text.upper(), x=width // 2, from_bottom=True)
+    draw_text(draw, top_text.upper(), x=width//2, y=None, max_width=width-20, from_bottom=False)
+    draw_text(draw, bottom_text.upper(), x=width//2, y=None, max_width=width-20, from_bottom=True)
 
     os.makedirs("static", exist_ok=True)
     meme_path = "static/meme.png"
