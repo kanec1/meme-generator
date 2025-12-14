@@ -86,9 +86,11 @@ def generate_meme():
     image_file.save(image_path)
 
     # Open image for editing
-    image = Image.open(image_path).convert("RGB")
-    draw = ImageDraw.Draw(image)
+    max_size = (1024, 1024)   # maximum width/height
+    image.thumbnail(max_size)  # preserves aspect ratio
     width, height = image.size
+    draw = ImageDraw.Draw(image)
+
 
     # Generate captions using public URL
     top_text, bottom_text = generate_meme_text_from_image(image_filename)
