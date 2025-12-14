@@ -4,13 +4,8 @@ from io import BytesIO
 import base64
 import os
 from openai import OpenAI
-from transformers import BlipProcessor, BlipForConditionalGeneration
 
 app = Flask(__name__)
-
-# Load BLIP model once at startup
-processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
 
 # Initialize OpenAI client using API key from environment variable
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -22,11 +17,30 @@ def home():
 
 # Caption the image using BLIP
 def caption_image(image):
-    image = image.convert("RGB")
-    inputs = processor(images=image, return_tensors="pt")
-    out = blip_model.generate(**inputs)
-    caption = processor.decode(out[0], skip_special_tokens=True)
-    return caption
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    image_b64 = base64.b64encode(buffer.getvalue()).decode()
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Describe this image in one clear sentence."},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{image_b64}"
+                        }
+                    }
+                ]
+            }
+        ],
+        max_tokens=100
+    )
+
+    return response.choices[0].message.content.strip()
 
 # Generate meme text
 def generate_meme_text(caption):
@@ -49,7 +63,7 @@ def generate_meme_text(caption):
 # Draw text on image
 def draw_text(draw, text, x, y=None, max_width=None, initial_font_size=50,
               from_bottom=False, max_height_ratio=0.25, margin=10):
-    font_path = "C:\\Windows\\Fonts\\impact.ttf"
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     width, height = draw.im.size
     max_width = max_width or width - 2 * margin
     max_height = int(height * max_height_ratio)

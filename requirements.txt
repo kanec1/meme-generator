@@ -1,6 +1,4 @@
 flask==2.3.3
 gunicorn==21.2.0
-pillow==10.1.0
-transformers==4.39.3
-torch
+pillow==9.5.0
 openai
