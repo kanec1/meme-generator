@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file
+from flask import Flask, request, render_template, send_file, url_for
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import base64
@@ -15,26 +15,21 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def home():
     return render_template("index.html")
 
-# Generate funny meme caption directly from image
-def generate_meme_text_from_image(image_file):
-    # Open image to check size
-    image = Image.open(image_file).convert("RGB")
+# Generate funny meme caption using a public URL
+def generate_meme_text_from_image(image_filename):
+    # Construct a public URL for Render to serve the image
+    image_url = url_for('static', filename=image_filename, _external=True)
 
-    # Prepare prompt for GPT
     prompt = (
-        "Look at this image and write a funny two-line meme caption.\n"
-        "Use humor, exaggeration, or sarcasm.\n"
-        "Return exactly two lines separated by |, with no labels."
+        f"Look at this image and write a funny two-line meme caption.\n"
+        f"Use humor, exaggeration, or sarcasm.\n"
+        f"Return exactly two lines separated by |, with no labels.\n"
+        f"Image URL: {image_url}"
     )
 
-    # Reset file pointer to start
-    image_file.seek(0)
-
-    # Send image file to GPT-4o-mini
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
-        files=[("image.png", image_file.read())],
         temperature=1.0,
         max_tokens=150
     )
@@ -83,19 +78,26 @@ def draw_text(draw, text, x, y, max_width, from_bottom=False,
 @app.route("/generate", methods=["POST"])
 def generate_meme():
     image_file = request.files["image"]
-    image = Image.open(image_file).convert("RGB")
+
+    # Save uploaded image to static folder
+    os.makedirs("static", exist_ok=True)
+    image_filename = image_file.filename
+    image_path = os.path.join("static", image_filename)
+    image_file.save(image_path)
+
+    # Open image for editing
+    image = Image.open(image_path).convert("RGB")
     draw = ImageDraw.Draw(image)
     width, height = image.size
 
-    # Generate top and bottom captions
-    top_text, bottom_text = generate_meme_text_from_image(image_file)
+    # Generate captions using public URL
+    top_text, bottom_text = generate_meme_text_from_image(image_filename)
 
     draw_text(draw, top_text.upper(), x=width//2, y=None, max_width=width-20, from_bottom=False)
     draw_text(draw, bottom_text.upper(), x=width//2, y=None, max_width=width-20, from_bottom=True)
 
-    # Save the meme
-    os.makedirs("static", exist_ok=True)
-    meme_path = "static/meme.png"
+    # Save meme
+    meme_path = os.path.join("static", "meme.png")
     image.save(meme_path, format="PNG")
 
     # Return as base64 for preview
