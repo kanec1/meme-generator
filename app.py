@@ -26,10 +26,9 @@ def generate_meme_text_from_image(image):
     image_b64 = base64.b64encode(buffer.getvalue()).decode()
 
     prompt = (
-        "Look at this image and do the following:\n"
-        "1. Describe it in one clear sentence.\n"
-        "2. Write a funny meme caption in exactly two lines separated by |.\n"
-        "Return only the two caption lines."
+        "Write a funny two-line meme caption for this image.\n"
+        "Use humor, exaggeration, or sarcasm.\n"
+        "Return the caption linesby | only, no labels.\n"
     )
 
     response = client.chat.completions.create(
@@ -41,7 +40,7 @@ def generate_meme_text_from_image(image):
                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_b64}"}}
             ]
         }],
-        temperature=0.9,
+        temperature=2.0,
         max_tokens=150
     )
 
