@@ -41,38 +41,52 @@ def generate_meme_text_from_image(image_filename):
         top_text, bottom_text = text, ""
     return top_text.strip(), bottom_text.strip()
 
-# Draw text on the image
-def draw_text(draw, text, x, y, max_width, from_bottom=False,
-              font_path="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
-    font_size = 50
-    font = ImageFont.truetype(font_path, font_size)
+# Draw text on the image with auto font sizing
+def draw_text(draw, text, x, y=None, max_width=None, from_bottom=False,
+              font_path="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+              initial_font_size=50, margin=10, max_height_ratio=0.25):
     width, height = draw.im.size
-    max_width = max_width or width - 20
+    max_width = max_width or width - 2 * margin
+    max_height = int(height * max_height_ratio)
 
-    # Simple word wrap
-    words = text.split()
-    lines, line = [], ""
-    for word in words:
-        test_line = f"{line} {word}".strip()
-        bbox = draw.textbbox((0,0), test_line, font=font)
-        if bbox[2] - bbox[0] <= max_width:
-            line = test_line
-        else:
+    font_size = initial_font_size
+    while font_size > 10:
+        font = ImageFont.truetype(font_path, font_size)
+        words = text.split()
+        lines, line = [], ""
+        for word in words:
+            test_line = f"{line} {word}".strip()
+            bbox = draw.textbbox((0, 0), test_line, font=font)
+            if bbox[2] - bbox[0] <= max_width:
+                line = test_line
+            else:
+                lines.append(line)
+                line = word
+        if line:
             lines.append(line)
-            line = word
-    if line:
-        lines.append(line)
 
-    total_height = len(lines) * font_size
-    y = height - total_height - 10 if from_bottom else 10
+        ascent, descent = font.getmetrics()
+        line_height = ascent + descent + 5
+        total_height = len(lines) * line_height
+
+        if total_height <= max_height:
+            break
+        font_size -= 2
+
+    # Set y-position
+    if from_bottom:
+        y = height - total_height - margin if y is None else y - total_height - margin
+    else:
+        y = margin if y is None else y
 
     # Draw outline + text
     for i, line in enumerate(lines):
-        line_y = y + i * font_size
-        for dx in [-2,0,2]:
-            for dy in [-2,0,2]:
-                draw.text((x+dx, line_y+dy), line, font=font, anchor="mm", fill="black")
+        line_y = y + i * line_height
+        for dx in [-2, 0, 2]:
+            for dy in [-2, 0, 2]:
+                draw.text((x + dx, line_y + dy), line, font=font, anchor="mm", fill="black")
         draw.text((x, line_y), line, font=font, anchor="mm", fill="white")
+
 
 # Meme generation route
 @app.route("/generate", methods=["POST"])
