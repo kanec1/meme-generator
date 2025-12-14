@@ -15,31 +15,26 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def home():
     return render_template("index.html")
 
-# Generate meme (caption + text) in one call
-def generate_meme_text_from_image(image):
-    # Resize image to speed up processing
-    max_size = (1024, 1024)
-    image.thumbnail(max_size)
+# Generate funny meme caption directly from image
+def generate_meme_text_from_image(image_file):
+    # Open image to check size
+    image = Image.open(image_file).convert("RGB")
 
-    buffer = BytesIO()
-    image.save(buffer, format="PNG")
-    image_b64 = base64.b64encode(buffer.getvalue()).decode()
-
+    # Prepare prompt for GPT
     prompt = (
-        "Write a funny two-line meme caption for this image.\n"
+        "Look at this image and write a funny two-line meme caption.\n"
         "Use humor, exaggeration, or sarcasm.\n"
-        "Return the caption lines by | only, no labels.\n"
+        "Return exactly two lines separated by |, with no labels."
     )
 
+    # Reset file pointer to start
+    image_file.seek(0)
+
+    # Send image file to GPT-4o-mini
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_b64}"}}
-            ]
-        }],
+        messages=[{"role": "user", "content": prompt}],
+        files=[("image.png", image_file.read())],
         temperature=1.0,
         max_tokens=150
     )
@@ -51,14 +46,15 @@ def generate_meme_text_from_image(image):
         top_text, bottom_text = text, ""
     return top_text.strip(), bottom_text.strip()
 
-# Draw text on image (simplified)
-def draw_text(draw, text, x, y, max_width, from_bottom=False, font_path="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
+# Draw text on the image
+def draw_text(draw, text, x, y, max_width, from_bottom=False,
+              font_path="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
     font_size = 50
     font = ImageFont.truetype(font_path, font_size)
     width, height = draw.im.size
     max_width = max_width or width - 20
 
-    # Simple wrapping
+    # Simple word wrap
     words = text.split()
     lines, line = [], ""
     for word in words:
@@ -91,15 +87,18 @@ def generate_meme():
     draw = ImageDraw.Draw(image)
     width, height = image.size
 
-    top_text, bottom_text = generate_meme_text_from_image(image)
+    # Generate top and bottom captions
+    top_text, bottom_text = generate_meme_text_from_image(image_file)
 
     draw_text(draw, top_text.upper(), x=width//2, y=None, max_width=width-20, from_bottom=False)
     draw_text(draw, bottom_text.upper(), x=width//2, y=None, max_width=width-20, from_bottom=True)
 
+    # Save the meme
     os.makedirs("static", exist_ok=True)
     meme_path = "static/meme.png"
     image.save(meme_path, format="PNG")
 
+    # Return as base64 for preview
     buffer = BytesIO()
     image.save(buffer, format="PNG")
     buffer.seek(0)
