@@ -1,28 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>AI Meme Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <style>
-        body { font-family: Arial; text-align: center; padding: 30px; background: #f9f9f9; }
-        h1 { color: #333; }
-        form { margin-bottom: 20px; }
-        input[type="file"] { margin-bottom: 10px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-        img { margin-top: 20px; max-width: 90%; border-radius: 10px; border: 2px solid #ccc; }
-        a.download-btn { display: inline-block; margin-top: 15px; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f9f9f9;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            background: #333;
+            color: white;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        img {
+            margin-top: 20px;
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            border: 2px solid #ccc;
+        }
+
+        a.download-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 20px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+
+        a.download-btn:hover {
+            background: #43a047;
+        }
     </style>
 </head>
 <body>
-    <h1>AI Meme Generator</h1>
+    <div class="container">
+        <h1>AI Meme Generator</h1>
 
-    <form action="/generate" method="POST" enctype="multipart/form-data">
-        <input type="file" name="image" required><br>
-        <button type="submit">Generate Meme</button>
-    </form>
+        <form action="/generate" method="POST" enctype="multipart/form-data">
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit">Generate Meme</button>
+        </form>
 
-    {% if meme_url %}
-        <img src="{{ meme_url }}" alt="Generated Meme"><br>
-        <a href="{{ download_url }}" class="download-btn">Download Meme</a>
-    {% endif %}
+        {% if meme_url %}
+            <img src="{{ meme_url }}" alt="Generated Meme">
+            <a href="{{ download_url }}" class="download-btn">Download Meme</a>
+        {% endif %}
+    </div>
 </body>
 </html>
