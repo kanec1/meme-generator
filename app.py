@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, send_file, url_for
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from io import BytesIO
 import base64
 import os
@@ -108,9 +108,12 @@ def generate_meme():
     image_file.save(image_path)
 
     # Open image for editing
-    image = Image.open(image_path).convert("RGB")
+    image = Image.open(image_path)
+    image = ImageOps.exif_transpose(image).convert("RGB")
+
     max_size = (1024, 1024)
-    image.thumbnail(max_size)
+    image.thumbnail(max_size, Image.LANCZOS)
+    
     width, height = image.size
     draw = ImageDraw.Draw(image)
 
