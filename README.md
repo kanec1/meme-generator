@@ -65,7 +65,7 @@ http://localhost:5000
 ## Key Design Decisions
 ### Public Image URLs for OpenAI
 
-Uploaded images are saved to the /static directory so they can be accessed via a fully qualified public URL. This mirrors how images would typically be served from object storage (e.g. S3) in production and allows OpenAI to “see” the image.
+The /static directory saves the images for the public url access. This mirrors how images would typically be served from object storage (e.g. S3) in production and allows OpenAI to “see” the image.
 
 ``` 
 url_for("static", filename=image_filename, _external=True)
