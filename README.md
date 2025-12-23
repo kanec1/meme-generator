@@ -25,12 +25,12 @@ It is designed as a **teaching example** showing how to wire together:
 
 ## Project Structure
 
-- ├── app.py # Main Flask application
-- ├── templates/
-- │ └── index.html # Upload form and preview UI
-- ├── static/
-- │ ├── <uploads> # User-uploaded images
-- │ └── meme.png # Generated meme output
+- app.py # Main Flask application
+- templates/
+    - index.html # Upload form and preview UI
+- static/
+    - <uploads> # User-uploaded images
+    - meme.png # Generated meme output
 
 ---
 
